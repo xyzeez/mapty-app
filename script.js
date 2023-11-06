@@ -7,6 +7,7 @@ const inputDistance = document.querySelector('.form__input--distance');
 const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
+const errorContainer = document.querySelector('.error-container');
 
 class Workout {
   constructor(coords, distance, duration) {
@@ -87,11 +88,8 @@ class App {
 
   _getPostion() {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        this._loadMap.bind(this),
-        function () {
-          alert('Could not get your location');
-        }
+      navigator.geolocation.getCurrentPosition(this._loadMap.bind(this), () =>
+        this.showError('Unable to access user location.')
       );
     }
   }
@@ -108,8 +106,10 @@ class App {
 
     L.marker(coords).addTo(this.#map).bindPopup('You are here').openPopup();
 
-    if (this.#workouts.length > 0)
+    if (this.#workouts.length > 0) {
       this.#workouts.forEach(workout => this._renderWorkoutMarker(workout));
+      this.#workouts.forEach(workout => this._renderWorkout(workout));
+    }
 
     this.#map.on('click', e => {
       this.#mapEvent = e;
@@ -157,7 +157,7 @@ class App {
         !validateInput(distance, duration, cadence) ||
         !allPositive(distance, duration, cadence)
       ) {
-        return alert('Inputs must be positive numbers!');
+        return this.showError('Inputs must be positive numbers!');
       }
 
       workout = new Running(coords, distance, duration, cadence);
@@ -170,7 +170,7 @@ class App {
         !validateInput(distance, duration, elevation) ||
         !allPositive(distance, duration, elevation)
       ) {
-        return alert('Inputs must be positive numbers!');
+        return this.showError('Inputs must be positive numbers!');
       }
 
       workout = new Cycling(coords, distance, duration, elevation);
@@ -279,8 +279,19 @@ class App {
     if (!localData) return;
 
     this.#workouts = localData;
+  }
 
-    this.#workouts.forEach(workout => this._renderWorkout(workout));
+  showError(errorMEssage) {
+    const html = `
+      <div class="error">
+        <p> ⚠️ ${errorMEssage}</p>
+      </div>`;
+
+    errorContainer.insertAdjacentHTML('afterbegin', html);
+    const error = errorContainer.querySelector('.error');
+    setTimeout(() => {
+      errorContainer.removeChild(error);
+    }, 2500);
   }
 }
 
