@@ -80,60 +80,41 @@ class App {
 
   constructor() {
     this._getLocalStorage();
-    this._getPostion();
+    this._getPosition();
     form.addEventListener('submit', e => this._newWorkout(e));
     inputType.addEventListener('change', this._toggleElevationField);
     containerWorkouts.addEventListener('click', e => this._moveToPopup(e));
   }
 
-  _getPostion() {
+  _getLocalStorage() {
+    const localData = JSON.parse(localStorage.getItem('workouts'));
+
+    if (!localData) return;
+
+    this.#workouts = localData.reduce((acc, data) => {
+      let obj;
+
+      if (data.type === 'running') obj = new Running();
+      if (data.type === 'cycling') obj = new Cycling();
+
+      Object.assign(obj, data);
+
+      acc.push(obj);
+
+      return acc;
+    }, []);
+  }
+
+  _setLocalStorage() {
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getPosition() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(this._loadMap.bind(this), () =>
         this.showError('Unable to access user location.')
       );
     }
-  }
-
-  _loadMap(position) {
-    const { latitude, longitude } = position.coords;
-    const coords = [latitude, longitude];
-    this.#map = L.map('map').setView(coords, 15);
-
-    L.tileLayer('https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(this.#map);
-
-    L.marker(coords).addTo(this.#map).bindPopup('You are here').openPopup();
-
-    if (this.#workouts.length > 0) {
-      this.#workouts.forEach(workout => this._renderWorkoutMarker(workout));
-      this.#workouts.forEach(workout => this._renderWorkout(workout));
-    }
-
-    this.#map.on('click', e => {
-      this.#mapEvent = e;
-      this._showForm();
-    });
-  }
-
-  _showForm() {
-    form.classList.remove('hidden');
-    inputDistance.focus();
-  }
-
-  _hideForm() {
-    inputDistance.value =
-      inputDuration.value =
-      inputCadence.value =
-      inputElevation.value =
-        '';
-    form.classList.add('hidden');
-  }
-
-  _toggleElevationField() {
-    inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
-    inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
   }
 
   _newWorkout(e) {
@@ -256,6 +237,48 @@ class App {
     form.insertAdjacentHTML('afterend', html);
   }
 
+  _loadMap(position) {
+    const { latitude, longitude } = position.coords;
+    const coords = [latitude, longitude];
+    this.#map = L.map('map').setView(coords, 15);
+
+    L.tileLayer('https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(this.#map);
+
+    L.marker(coords).addTo(this.#map).bindPopup('You are here').openPopup();
+
+    if (this.#workouts.length > 0) {
+      this.#workouts.forEach(workout => this._renderWorkoutMarker(workout));
+      this.#workouts.forEach(workout => this._renderWorkout(workout));
+    }
+
+    this.#map.on('click', e => {
+      this.#mapEvent = e;
+      this._showForm();
+    });
+  }
+
+  _showForm() {
+    form.classList.remove('hidden');
+    inputDistance.focus();
+  }
+
+  _hideForm() {
+    inputDistance.value =
+      inputDuration.value =
+      inputCadence.value =
+      inputElevation.value =
+        '';
+    form.classList.add('hidden');
+  }
+
+  _toggleElevationField() {
+    inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
+    inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
+  }
+
   _moveToPopup(e) {
     if (!e.target.closest('.workout')) return;
 
@@ -267,18 +290,6 @@ class App {
       animate: true,
       duration: 1,
     });
-  }
-
-  _setLocalStorage() {
-    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
-  }
-
-  _getLocalStorage() {
-    const localData = JSON.parse(localStorage.getItem('workouts'));
-
-    if (!localData) return;
-
-    this.#workouts = localData;
   }
 
   showError(errorMEssage) {
