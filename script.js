@@ -173,7 +173,7 @@ class App {
       .bindPopup(
         L.popup({
           maxWidth: 250,
-          minWidth: 200,
+          minWidth: 220,
           closeButton: false,
           autoClose: false,
           closeOnClick: false,
